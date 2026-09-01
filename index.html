@@ -6,6 +6,10 @@
 <meta name="theme-color" content="#0D9488">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>KISEJA TENANTS</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0A6E6E">
 <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
@@ -1335,6 +1339,10 @@ function closeRemind() {
 
 // ═══ SESSION RESTORE ═══
 window.addEventListener('load',async ()=>{
+  // Sajili Service Worker (kuwezesha "Ongeza kwenye Skrini ya Nyumbani")
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
   // Thibitisha kimya kimya kwanza (inahitajika na Firestore Rules)
   const loginBtn=document.getElementById('li-btn');
   if(loginBtn){ loginBtn.disabled=true; loginBtn.textContent='Inaandaa...'; }
