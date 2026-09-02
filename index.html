@@ -572,11 +572,11 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
     <label class="form-lbl">Kiasi cha Kulipa (TZS)</label>
     <input class="form-inp" id="pay-amount" type="number" placeholder="Kiasi cha pango">
 
-    <!-- Period (start-end month) -->
-    <label class="form-lbl">Kuanzia Mwezi</label>
-    <input class="form-inp" id="pay-month-start" type="month" onchange="updateKodiPeriod()">
-    <label class="form-lbl">Hadi Mwezi (mwezi wa mwisho utakaolipa)</label>
-    <input class="form-inp" id="pay-month-end" type="month" onchange="updateKodiPeriod()">
+    <!-- Period (start-end DATE, si mwezi tu - kwa kuwa mikataba haianzii tarehe 1 kila mmoja) -->
+    <label class="form-lbl">Kuanzia Tarehe</label>
+    <input class="form-inp" id="pay-date-start" type="date" onchange="updateKodiPeriod()">
+    <label class="form-lbl">Hadi Tarehe (siku ya mwisho ya kipindi unacholipa)</label>
+    <input class="form-inp" id="pay-date-end" type="date" onchange="updateKodiPeriod()">
     <div id="pay-period-hint" style="font-size:.78rem;color:var(--muted,#6B7280);margin:-6px 0 10px"></div>
 
     <!-- Payment method -->
@@ -1324,20 +1324,30 @@ function fmtMonthSw(ym){ // ym = "2026-08"
   const [y,m] = ym.split('-').map(Number);
   return MIEZI_SW[m-1] + ' ' + y;
 }
-function monthsBetweenInclusive(startYm, endYm){
-  const [sy,sm] = startYm.split('-').map(Number);
-  const [ey,em] = endYm.split('-').map(Number);
-  return (ey*12+em) - (sy*12+sm) + 1;
+function fmtDateSw(d){ // d = "2026-08-10"
+  if(!d) return '';
+  const [y,m,day] = d.split('-').map(Number);
+  return day + ' ' + MIEZI_SW[m-1] + ' ' + y;
+}
+// Idadi ya "miezi" ya kodi kati ya tarehe mbili - inategemea idadi ya siku (~siku 30.44 kwa mwezi
+// mmoja) badala ya mwezi wa kalenda, kwa sababu mikataba ya wapangaji haianzii tarehe 1 kila mmoja
+// (mf. mmoja tarehe 10, mwingine tarehe 26) - hivyo "10 Ago - 10 Sep" au "26 Ago - 26 Sep" zote
+// zinapaswa kuhesabiwa kama mwezi 1, hata kama si mwezi wa kalenda kamili.
+function monthsBetweenDates(startStr, endStr){
+  const start = new Date(startStr), end = new Date(endStr);
+  const days = Math.round((end - start) / 86400000);
+  if(days <= 0) return 1;
+  return Math.max(1, Math.round(days / 30.44));
 }
 function updateKodiPeriod(){
-  const s = document.getElementById('pay-month-start').value;
-  const e = document.getElementById('pay-month-end').value;
+  const s = document.getElementById('pay-date-start').value;
+  const e = document.getElementById('pay-date-end').value;
   const hint = document.getElementById('pay-period-hint');
   if(!s){ hint.textContent=''; return; }
-  const endVal = e || s;
-  if(endVal < s){ hint.textContent='⚠️ Mwezi wa mwisho hauwezi kuwa kabla ya mwezi wa kuanzia.'; return; }
-  const n = monthsBetweenInclusive(s, endVal);
-  hint.textContent = n===1 ? `Kipindi: ${fmtMonthSw(s)} (mwezi 1)` : `Kipindi: ${fmtMonthSw(s)} – ${fmtMonthSw(endVal)} (miezi ${n})`;
+  if(!e){ hint.textContent = `Kuanzia: ${fmtDateSw(s)} — chagua tarehe ya mwisho`; return; }
+  if(e <= s){ hint.textContent='⚠️ Tarehe ya mwisho lazima iwe baada ya tarehe ya kuanzia.'; return; }
+  const n = monthsBetweenDates(s, e);
+  hint.textContent = `Kipindi: ${fmtDateSw(s)} – ${fmtDateSw(e)} (${n===1?'mwezi 1':'miezi '+n})`;
   if(T && T.pango){
     document.getElementById('pay-amount').value = Number(T.pango) * n;
   }
@@ -1358,8 +1368,11 @@ function openPayModal() {
   if(T && T.pango) {
     document.getElementById('pay-amount').value = T.pango;
   }
-  document.getElementById('pay-month-start').value = '';
-  document.getElementById('pay-month-end').value = '';
+  // Jaza "Kuanzia Tarehe" na tarehe ya kuisha kodi ya sasa ya mpangaji (kama ipo) - hapo ndipo
+  // kipindi kipya kinapoanzia. Kama haijulikani, tumia leo.
+  const startDefault = (T && T.kuisha) ? T.kuisha : new Date().toISOString().slice(0,10);
+  document.getElementById('pay-date-start').value = startDefault;
+  document.getElementById('pay-date-end').value = '';
   document.getElementById('pay-period-hint').textContent = '';
   document.getElementById('pay-modal-sub').textContent =
     T ? 'Pango lako: TZS ' + tzs(T.pango) + '/mwezi — ' + T.nyumba : 'Jaza taarifa za malipo';
@@ -1391,18 +1404,19 @@ function closeSCModal() {
 
 async function submitPayment() {
   const amount = parseInt(document.getElementById('pay-amount').value);
-  const monthStart = document.getElementById('pay-month-start').value;
-  let monthEnd = document.getElementById('pay-month-end').value || monthStart;
+  const dateStart = document.getElementById('pay-date-start').value;
+  const dateEnd = document.getElementById('pay-date-end').value;
   const ref = document.getElementById('pay-ref').value.trim();
   const note = document.getElementById('pay-note').value.trim();
   const btn = document.getElementById('pay-submit');
 
   if(!amount || amount < 1000) { toast('Weka kiasi sahihi cha kulipa'); return; }
-  if(!monthStart) { toast('Chagua mwezi wa kuanzia'); return; }
-  if(monthEnd < monthStart) { toast('Mwezi wa mwisho hauwezi kuwa kabla ya mwezi wa kuanzia'); return; }
+  if(!dateStart) { toast('Chagua tarehe ya kuanzia'); return; }
+  if(!dateEnd) { toast('Chagua tarehe ya mwisho'); return; }
+  if(dateEnd <= dateStart) { toast('Tarehe ya mwisho lazima iwe baada ya tarehe ya kuanzia'); return; }
 
-  const idadiMiezi = monthsBetweenInclusive(monthStart, monthEnd);
-  const mwezi = idadiMiezi===1 ? fmtMonthSw(monthStart) : `${fmtMonthSw(monthStart)} – ${fmtMonthSw(monthEnd)}`;
+  const idadiMiezi = monthsBetweenDates(dateStart, dateEnd);
+  const mwezi = `${fmtDateSw(dateStart)} – ${fmtDateSw(dateEnd)}`;
 
   btn.disabled = true; btn.textContent = 'Inatuma ombi...';
 
@@ -1417,8 +1431,8 @@ async function submitPayment() {
       kiasi: amount,
       aina: 'KODI',
       mwezi: mwezi,
-      mwezi_kuanzia: monthStart,
-      mwezi_mwisho: monthEnd,
+      mwezi_kuanzia: dateStart,
+      mwezi_mwisho: dateEnd,
       idadi_miezi: idadiMiezi,
       njia: selPayMethod,
       rejista: ref || '',
@@ -1433,8 +1447,8 @@ async function submitPayment() {
 
     // Clear form
     document.getElementById('pay-amount').value = '';
-    document.getElementById('pay-month-start').value = '';
-    document.getElementById('pay-month-end').value = '';
+    document.getElementById('pay-date-start').value = '';
+    document.getElementById('pay-date-end').value = '';
     document.getElementById('pay-period-hint').textContent = '';
     document.getElementById('pay-ref').value = '';
     document.getElementById('pay-note').value = '';
