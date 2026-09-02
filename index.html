@@ -572,17 +572,12 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
     <label class="form-lbl">Kiasi cha Kulipa (TZS)</label>
     <input class="form-inp" id="pay-amount" type="number" placeholder="Kiasi cha pango">
 
-    <!-- Month -->
-    <label class="form-lbl">Mwezi wa Kulipa</label>
-    <select class="form-inp" id="pay-month">
-      <option value="">Chagua mwezi...</option>
-      <option>Januari 2026</option><option>Februari 2026</option>
-      <option>Machi 2026</option><option>Aprili 2026</option>
-      <option>Mei 2026</option><option>Juni 2026</option>
-      <option>Julai 2026</option><option>Agosti 2026</option>
-      <option>Septemba 2026</option><option>Oktoba 2026</option>
-      <option>Novemba 2026</option><option>Desemba 2026</option>
-    </select>
+    <!-- Period (start-end month) -->
+    <label class="form-lbl">Kuanzia Mwezi</label>
+    <input class="form-inp" id="pay-month-start" type="month" onchange="updateKodiPeriod()">
+    <label class="form-lbl">Hadi Mwezi (mwezi wa mwisho utakaolipa)</label>
+    <input class="form-inp" id="pay-month-end" type="month" onchange="updateKodiPeriod()">
+    <div id="pay-period-hint" style="font-size:.78rem;color:var(--muted,#6B7280);margin:-6px 0 10px"></div>
 
     <!-- Payment method -->
     <label class="form-lbl">Njia ya Kulipa</label>
@@ -623,6 +618,76 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 
     <button class="pay-btn" id="pay-submit" onclick="submitPayment()">💳 Tuma Ombi la Malipo</button>
     <button class="cancel-btn" onclick="closePayModal()">Ghairi</button>
+  </div>
+</div>
+
+<!-- Huduma (Services) Payment Modal -->
+<div class="modal-bg" id="sc-modal" onclick="if(event.target===this)closeSCModal()">
+  <div class="modal-sheet">
+    <div class="modal-drag"></div>
+    <div class="modal-title">💧 Lipa Huduma</div>
+    <div class="modal-sub" id="sc-modal-sub">Maji, Usafi, Ulinzi, Intaneti na huduma nyingine</div>
+
+    <label class="form-lbl">Mwezi wa Huduma</label>
+    <input class="form-inp" id="sc-month" type="month">
+
+    <label class="form-lbl">💧 Maji (TZS)</label>
+    <input class="form-inp" id="sc-maji" type="number" placeholder="0" oninput="updateSCTotal()">
+
+    <label class="form-lbl">🧹 Usafi (TZS)</label>
+    <input class="form-inp" id="sc-usafi" type="number" placeholder="0" oninput="updateSCTotal()">
+
+    <label class="form-lbl">🛡️ Ulinzi (TZS)</label>
+    <input class="form-inp" id="sc-ulinzi" type="number" placeholder="0" oninput="updateSCTotal()">
+
+    <label class="form-lbl">🌐 Intaneti (TZS)</label>
+    <input class="form-inp" id="sc-net" type="number" placeholder="0" oninput="updateSCTotal()">
+
+    <label class="form-lbl">🧾 Huduma Nyingine (TZS)</label>
+    <input class="form-inp" id="sc-bill" type="number" placeholder="0" oninput="updateSCTotal()">
+
+    <div style="background:var(--tll);border:1px solid var(--tl);border-radius:12px;padding:12px 14px;margin:6px 0 14px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:.82rem;font-weight:700;color:var(--t1)">Jumla ya Kulipa</span>
+      <span id="sc-total-display" style="font-size:1.1rem;font-weight:800;color:var(--t1)">TZS 0</span>
+    </div>
+
+    <!-- Payment method -->
+    <label class="form-lbl">Njia ya Kulipa</label>
+    <div class="pay-method-grid">
+      <div class="pay-method sel" onclick="selSCMethod(this,'NMB Bank')">
+        <span class="pm-icon">🏦</span>
+        <div class="pm-name">NMB Bank</div>
+        <div class="pm-num">60610028387</div>
+      </div>
+      <div class="pay-method" onclick="selSCMethod(this,'Yass')">
+        <span class="pm-icon">📱</span>
+        <div class="pm-name">Yass</div>
+        <div class="pm-num">17517483</div>
+      </div>
+      <div class="pay-method" onclick="selSCMethod(this,'M-PESA')">
+        <span class="pm-icon">📲</span>
+        <div class="pm-name">M-PESA</div>
+        <div class="pm-num">+255 736 631 613</div>
+      </div>
+      <div class="pay-method" onclick="selSCMethod(this,'TIGO/AIRTEL')">
+        <span class="pm-icon">📲</span>
+        <div class="pm-name">TIGO/AIRTEL</div>
+        <div class="pm-num">+255 736 631 613</div>
+      </div>
+    </div>
+
+    <label class="form-lbl">Namba ya Rejista / Muamala (hiari)</label>
+    <input class="form-inp" id="sc-ref" type="text" placeholder="Mfano: MPESA123456">
+
+    <label class="form-lbl">Maelezo ya Ziada (hiari)</label>
+    <input class="form-inp" id="sc-note" type="text" placeholder="Mfano: Maji na Usafi wa Agosti">
+
+    <div style="background:var(--tll);border:1px solid var(--tl);border-radius:12px;padding:12px 14px;font-size:.76rem;color:var(--t1);margin-bottom:16px;line-height:1.6">
+      ℹ️ Baada ya kutuma, KISEJA watapokea taarifa na watathibitisha malipo yako.
+    </div>
+
+    <button class="pay-btn" id="sc-submit" onclick="submitSCPayment()">💧 Tuma Ombi la Malipo ya Huduma</button>
+    <button class="cancel-btn" onclick="closeSCModal()">Ghairi</button>
   </div>
 </div>
 
@@ -920,8 +985,11 @@ function renderHome(){
     </div>
 
     <!-- PAY BUTTON -->
-    <button onclick="openPayModal()" style="width:100%;background:linear-gradient(135deg,var(--gr1),var(--gr2));color:#fff;border:none;border-radius:16px;padding:16px;font-size:1rem;font-weight:800;cursor:pointer;font-family:var(--font);box-shadow:0 6px 20px rgba(5,150,105,.4);margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s">
+    <button onclick="openPayModal()" style="width:100%;background:linear-gradient(135deg,var(--gr1),var(--gr2));color:#fff;border:none;border-radius:16px;padding:16px;font-size:1rem;font-weight:800;cursor:pointer;font-family:var(--font);box-shadow:0 6px 20px rgba(5,150,105,.4);margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s">
       💳 Lipa Kodi Sasa
+    </button>
+    <button onclick="openSCModal()" style="width:100%;background:linear-gradient(135deg,#0EA5E9,#0369A1);color:#fff;border:none;border-radius:16px;padding:16px;font-size:1rem;font-weight:800;cursor:pointer;font-family:var(--font);box-shadow:0 6px 20px rgba(14,165,233,.35);margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s">
+      💧 Lipa Huduma Sasa
     </button>
 
     <!-- LAST PAYMENT -->
@@ -977,8 +1045,11 @@ function renderMalipo(){
         <div class="ks">${deni>0?'Tafadhali lipa':'Malipo sawa'}</div>
       </div>
     </div>
-    <button onclick="openPayModal()" style="width:100%;background:linear-gradient(135deg,var(--gr1),var(--gr2));color:#fff;border:none;border-radius:16px;padding:15px;font-size:.95rem;font-weight:800;cursor:pointer;font-family:var(--font);box-shadow:0 6px 20px rgba(5,150,105,.4);margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px">
+    <button onclick="openPayModal()" style="width:100%;background:linear-gradient(135deg,var(--gr1),var(--gr2));color:#fff;border:none;border-radius:16px;padding:15px;font-size:.95rem;font-weight:800;cursor:pointer;font-family:var(--font);box-shadow:0 6px 20px rgba(5,150,105,.4);margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px">
       💳 Lipa Kodi Sasa
+    </button>
+    <button onclick="openSCModal()" style="width:100%;background:linear-gradient(135deg,#0EA5E9,#0369A1);color:#fff;border:none;border-radius:16px;padding:15px;font-size:.95rem;font-weight:800;cursor:pointer;font-family:var(--font);box-shadow:0 6px 20px rgba(14,165,233,.35);margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px">
+      💧 Lipa Huduma Sasa
     </button>
     <div class="stl">Rekodi Zote za Malipo</div>
     <div class="card"><div class="cbd">
@@ -1233,11 +1304,53 @@ function renderZaidi(){
 
 // ═══ PAYMENT SYSTEM ═══
 let selPayMethod = 'NMB Bank';
+let selSCPayMethod = 'NMB Bank';
 
 function selMethod(el, method) {
   selPayMethod = method;
-  document.querySelectorAll('.pay-method').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('#pay-modal .pay-method').forEach(b => b.classList.remove('sel'));
   el.classList.add('sel');
+}
+function selSCMethod(el, method) {
+  selSCPayMethod = method;
+  document.querySelectorAll('#sc-modal .pay-method').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// ═══ Miezi ya Kiswahili (kwa kuonyesha kipindi kizuri) ═══
+const MIEZI_SW = ['Januari','Februari','Machi','Aprili','Mei','Juni','Julai','Agosti','Septemba','Oktoba','Novemba','Desemba'];
+function fmtMonthSw(ym){ // ym = "2026-08"
+  if(!ym) return '';
+  const [y,m] = ym.split('-').map(Number);
+  return MIEZI_SW[m-1] + ' ' + y;
+}
+function monthsBetweenInclusive(startYm, endYm){
+  const [sy,sm] = startYm.split('-').map(Number);
+  const [ey,em] = endYm.split('-').map(Number);
+  return (ey*12+em) - (sy*12+sm) + 1;
+}
+function updateKodiPeriod(){
+  const s = document.getElementById('pay-month-start').value;
+  const e = document.getElementById('pay-month-end').value;
+  const hint = document.getElementById('pay-period-hint');
+  if(!s){ hint.textContent=''; return; }
+  const endVal = e || s;
+  if(endVal < s){ hint.textContent='⚠️ Mwezi wa mwisho hauwezi kuwa kabla ya mwezi wa kuanzia.'; return; }
+  const n = monthsBetweenInclusive(s, endVal);
+  hint.textContent = n===1 ? `Kipindi: ${fmtMonthSw(s)} (mwezi 1)` : `Kipindi: ${fmtMonthSw(s)} – ${fmtMonthSw(endVal)} (miezi ${n})`;
+  if(T && T.pango){
+    document.getElementById('pay-amount').value = Number(T.pango) * n;
+  }
+}
+
+function updateSCTotal(){
+  const total = (parseInt(document.getElementById('sc-maji').value)||0)
+    + (parseInt(document.getElementById('sc-usafi').value)||0)
+    + (parseInt(document.getElementById('sc-ulinzi').value)||0)
+    + (parseInt(document.getElementById('sc-net').value)||0)
+    + (parseInt(document.getElementById('sc-bill').value)||0);
+  document.getElementById('sc-total-display').textContent = 'TZS ' + tzs(total);
+  return total;
 }
 
 function openPayModal() {
@@ -1245,6 +1358,9 @@ function openPayModal() {
   if(T && T.pango) {
     document.getElementById('pay-amount').value = T.pango;
   }
+  document.getElementById('pay-month-start').value = '';
+  document.getElementById('pay-month-end').value = '';
+  document.getElementById('pay-period-hint').textContent = '';
   document.getElementById('pay-modal-sub').textContent =
     T ? 'Pango lako: TZS ' + tzs(T.pango) + '/mwezi — ' + T.nyumba : 'Jaza taarifa za malipo';
   document.getElementById('pay-modal').classList.add('on');
@@ -1256,15 +1372,37 @@ function closePayModal() {
   document.body.style.overflow = '';
 }
 
+function openSCModal() {
+  document.getElementById('sc-month').value = '';
+  ['sc-maji','sc-usafi','sc-ulinzi','sc-net','sc-bill','sc-ref','sc-note'].forEach(id=>{
+    document.getElementById(id).value = '';
+  });
+  updateSCTotal();
+  document.getElementById('sc-modal-sub').textContent =
+    T ? T.nyumba + ' — Jaza huduma unazolipia mwezi huu' : 'Jaza taarifa za malipo ya huduma';
+  document.getElementById('sc-modal').classList.add('on');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSCModal() {
+  document.getElementById('sc-modal').classList.remove('on');
+  document.body.style.overflow = '';
+}
+
 async function submitPayment() {
   const amount = parseInt(document.getElementById('pay-amount').value);
-  const month = document.getElementById('pay-month').value;
+  const monthStart = document.getElementById('pay-month-start').value;
+  let monthEnd = document.getElementById('pay-month-end').value || monthStart;
   const ref = document.getElementById('pay-ref').value.trim();
   const note = document.getElementById('pay-note').value.trim();
   const btn = document.getElementById('pay-submit');
 
   if(!amount || amount < 1000) { toast('Weka kiasi sahihi cha kulipa'); return; }
-  if(!month) { toast('Chagua mwezi wa kulipa'); return; }
+  if(!monthStart) { toast('Chagua mwezi wa kuanzia'); return; }
+  if(monthEnd < monthStart) { toast('Mwezi wa mwisho hauwezi kuwa kabla ya mwezi wa kuanzia'); return; }
+
+  const idadiMiezi = monthsBetweenInclusive(monthStart, monthEnd);
+  const mwezi = idadiMiezi===1 ? fmtMonthSw(monthStart) : `${fmtMonthSw(monthStart)} – ${fmtMonthSw(monthEnd)}`;
 
   btn.disabled = true; btn.textContent = 'Inatuma ombi...';
 
@@ -1277,7 +1415,11 @@ async function submitPayment() {
       mkoa: T.mkoa,
       pango: T.pango,
       kiasi: amount,
-      mwezi: month,
+      aina: 'KODI',
+      mwezi: mwezi,
+      mwezi_kuanzia: monthStart,
+      mwezi_mwisho: monthEnd,
+      idadi_miezi: idadiMiezi,
       njia: selPayMethod,
       rejista: ref || '',
       maelezo: note || '',
@@ -1291,7 +1433,9 @@ async function submitPayment() {
 
     // Clear form
     document.getElementById('pay-amount').value = '';
-    document.getElementById('pay-month').value = '';
+    document.getElementById('pay-month-start').value = '';
+    document.getElementById('pay-month-end').value = '';
+    document.getElementById('pay-period-hint').textContent = '';
     document.getElementById('pay-ref').value = '';
     document.getElementById('pay-note').value = '';
 
@@ -1299,6 +1443,50 @@ async function submitPayment() {
     toast('❌ Hitilafu: ' + e.message);
   }
   btn.disabled = false; btn.textContent = '💳 Tuma Ombi la Malipo';
+}
+
+async function submitSCPayment() {
+  const month = document.getElementById('sc-month').value;
+  const maji = parseInt(document.getElementById('sc-maji').value)||0;
+  const usafi = parseInt(document.getElementById('sc-usafi').value)||0;
+  const ulinzi = parseInt(document.getElementById('sc-ulinzi').value)||0;
+  const net = parseInt(document.getElementById('sc-net').value)||0;
+  const bill = parseInt(document.getElementById('sc-bill').value)||0;
+  const total = maji+usafi+ulinzi+net+bill;
+  const ref = document.getElementById('sc-ref').value.trim();
+  const note = document.getElementById('sc-note').value.trim();
+  const btn = document.getElementById('sc-submit');
+
+  if(!month){ toast('Chagua mwezi wa huduma'); return; }
+  if(total < 500){ toast('Weka angalau kiasi kimoja cha huduma'); return; }
+
+  btn.disabled = true; btn.textContent = 'Inatuma ombi...';
+
+  try {
+    const payReqId = 'PAY-REQ-SC-' + T.id + '-' + Date.now();
+    await db.collection('malipo_ombi').doc(payReqId).set({
+      tenant_id: T.id,
+      jina: T.jina,
+      nyumba: T.nyumba,
+      mkoa: T.mkoa,
+      kiasi: total,
+      aina: 'HUDUMA',
+      mwezi: fmtMonthSw(month),
+      huduma: { maji, usafi, ulinzi, net, bill },
+      njia: selSCPayMethod,
+      rejista: ref || '',
+      maelezo: note || '',
+      hali: 'INASUBIRI',
+      wakati: firebase.firestore.FieldValue.serverTimestamp(),
+      soma_admin: false
+    });
+
+    closeSCModal();
+    toast('✅ Ombi la malipo ya huduma limetumwa! KISEJA watathibitisha hivi karibuni.');
+  } catch(e) {
+    toast('❌ Hitilafu: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = '💧 Tuma Ombi la Malipo ya Huduma';
 }
 
 // Payment reminder popup
