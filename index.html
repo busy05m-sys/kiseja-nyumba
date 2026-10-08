@@ -1085,7 +1085,6 @@ function renderMalipo(){
     <button onclick="openSCModal()" style="width:100%;background:linear-gradient(135deg,#0EA5E9,#0369A1);color:#fff;border:none;border-radius:16px;padding:15px;font-size:.95rem;font-weight:800;cursor:pointer;font-family:var(--font);box-shadow:0 6px 20px rgba(14,165,233,.35);margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px">
       💧 Lipa Huduma Sasa
     </button>
-    <button onclick="openHakiki()" style="width:100%;background:#F0FDFA;color:#0F766E;border:1.5px solid #99F6E4;border-radius:16px;padding:12px;font-size:.88rem;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:12px">🔎 Hakiki Risiti (kwa namba au barcode)</button>
     <div class="stl">Rekodi Zote za Malipo</div>
     <div class="card"><div class="cbd">
     ${MAL.length?MAL.map(p=>`
@@ -1617,20 +1616,18 @@ async function hkGo(){
       return;
     }
     const uniq = [...new Map(hits.map(x=>[x.tarehe+'|'+x.kilipo+'|'+x.mpya, x])).values()];
-    const p = uniq[0]; let ny = '';
-    try{ const td = await db.collection('wapangaji').doc(q.tid).get(); ny = (td.exists && td.data().nyumba) || ''; }catch(e){}
+    const p = uniq[0]; let ny = '', jina = '';
+    try{ const td = await db.collection('wapangaji').doc(q.tid).get(); if(td.exists){ ny = td.data().nyumba || ''; jina = td.data().jina || ''; } }catch(e){}
     const row = (l,v) => `<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:#64748B">${l}</span><strong style="text-align:right">${v}</strong></div>`;
-    const warn = uniq.length>1 ? '<div style="background:#FFF7ED;border-radius:8px;padding:6px 10px;margin-bottom:8px;color:#9A3412">⚠️ Kuna rekodi zaidi ya moja zenye namba hii zinazotofautiana. Wasiliana na KISEJA ili kuthibitisha.</div>' : '';
+    const warn = uniq.length>1 ? '<div style="background:#FFF7ED;border-radius:8px;padding:6px 10px;margin-bottom:8px;color:#9A3412">⚠️ Kuna rekodi zaidi ya moja zenye namba hii zinazotofautiana. Wasiliana na KISEJA.</div>' : '';
     out.innerHTML = hkCard(true, warn
-      + row('Namba ya Risiti', hkEsc(p.risiti))
-      + row('Tarehe ya Malipo', fmt(p.tarehe))
+      + `<div style="font-size:.66rem;font-weight:800;color:#64748B;letter-spacing:.06em">JINA LA MLIPAJI</div><div style="font-size:1.1rem;font-weight:900;margin-bottom:10px">${jina ? hkEsc(jina) : '—'}</div>`
       + row('Kiasi Kilicholipwa', 'TZS ' + tzs(p.kilipo))
+      + row('Tarehe ya Malipo', fmt(p.tarehe))
       + row('Kipindi', p.kuanza ? fmt(p.kuanza)+' → '+fmt(p.mpya) : hkEsc(p.kipindi||'—'))
       + (ny ? row('Nyumba', hkEsc(ny)) : '')
-      + row('Kodi Imelipwa Hadi', fmt(p.mpya))
-      + row('Hali', hkEsc(p.hali||'—'))
-      + (T && T.id===q.tid ? '<div style="margin-top:8px;color:#047857;font-weight:800">✔ Hii ni risiti yako.</div>' : '')
-      + '<div style="margin-top:8px;font-size:.7rem;color:#64748B">Jina na namba ya simu ya mpangaji hazionyeshwi hapa.</div>');
+      + row('Namba ya Risiti', hkEsc(p.risiti))
+      + (p.hali && p.hali!=='IMELIPWA' ? row('Hali', hkEsc(p.hali)) : ''));
   }catch(e){
     console.error('hakiki', e);
     out.innerHTML = hkCard(false, 'Imeshindwa kuhakiki sasa hivi (angalia mtandao). Jaribu tena baadaye au wasiliana na KISEJA: <strong>+255 736 631 613</strong>');
