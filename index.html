@@ -37,15 +37,15 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 .scr.on{display:flex!important;flex-direction:column;min-height:100vh}
 
 /* ═══ LOGIN ═══ */
-#scr-login{
+#scr-login,#scr-hakiki{
   background:linear-gradient(150deg,#134E4A 0%,#0F766E 35%,#0D9488 65%,#0891B2 100%);
   align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden;
 }
-#scr-login::before{
+#scr-login::before,#scr-hakiki::before{
   content:'';position:absolute;width:400px;height:400px;border-radius:50%;
   background:rgba(255,255,255,.04);top:-100px;right:-100px;
 }
-#scr-login::after{
+#scr-login::after,#scr-hakiki::after{
   content:'';position:absolute;width:300px;height:300px;border-radius:50%;
   background:rgba(255,255,255,.04);bottom:-80px;left:-80px;
 }
@@ -405,6 +405,8 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
   font-size:.8rem;font-weight:700;opacity:0;transition:.3s;z-index:999;
   pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.22);white-space:nowrap;
 }
+.lhk{display:block;width:100%;margin-top:14px;background:none;border:1.5px dashed #0D9488;color:#0F766E;border-radius:14px;padding:11px;font-size:.84rem;font-weight:800;cursor:pointer;font-family:inherit}
+.hkbtn{margin-top:6px;background:#F0FDFA;border:1px solid #99F6E4;color:#0F766E;border-radius:10px;padding:4px 9px;font-size:.66rem;font-weight:800;cursor:pointer;font-family:inherit}
 </style>
 </head>
 <body>
@@ -425,7 +427,32 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
       onkeydown="if(event.key==='Enter')doLogin()">
     <button class="lbtn" id="li-btn" onclick="doLogin()">Ingia Kwenye Akaunti Yangu →</button>
     <div class="lerr" id="li-err"></div>
+    <button class="lhk" onclick="openHakiki()">🔎 Hakiki Risiti (bila kuingia)</button>
     <div class="lhint">ID ipo kwenye mkataba wako<br>Msaada: <strong>+255 736 631 613</strong></div>
+  </div>
+</div>
+
+<!-- ═══ HAKIKI RISITI ═══ -->
+<div id="scr-hakiki" class="scr">
+  <div class="lcard">
+    <div class="llogo">
+      <div class="licon">🔎</div>
+      <div class="ltitle">Hakiki Risiti</div>
+      <div class="lsub">Thibitisha risiti ya KISEJA TENANTS</div>
+    </div>
+    <label class="lbl">Namba ya Risiti</label>
+    <input class="inp" id="hk-no" type="text" placeholder="RCP-001-001" autocomplete="off" spellcheck="false"
+      oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')hkGo()">
+    <button class="lbtn" onclick="hkGo()">🔎 Hakiki</button>
+    <button class="lbtn" style="margin-top:10px;background:linear-gradient(135deg,#0EA5E9,#0369A1)" onclick="hkScan()">📷 Scan Barcode kwa Kamera</button>
+    <div id="hk-cam" style="display:none;margin-top:12px">
+      <video id="hk-video" playsinline muted style="width:100%;border-radius:14px;background:#000"></video>
+      <canvas id="hk-canvas" style="display:none"></canvas>
+      <div class="lhint" id="hk-msg"></div>
+      <button class="lbtn" style="margin-top:8px;background:#64748B" onclick="hkStop()">✖ Funga Kamera</button>
+    </div>
+    <div id="hk-res" style="margin-top:16px"></div>
+    <button class="lbtn" style="margin-top:14px;background:#334155" onclick="closeHakiki()">← Rudi</button>
   </div>
 </div>
 
@@ -1058,6 +1085,7 @@ function renderMalipo(){
     <button onclick="openSCModal()" style="width:100%;background:linear-gradient(135deg,#0EA5E9,#0369A1);color:#fff;border:none;border-radius:16px;padding:15px;font-size:.95rem;font-weight:800;cursor:pointer;font-family:var(--font);box-shadow:0 6px 20px rgba(14,165,233,.35);margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px">
       💧 Lipa Huduma Sasa
     </button>
+    <button onclick="openHakiki()" style="width:100%;background:#F0FDFA;color:#0F766E;border:1.5px solid #99F6E4;border-radius:16px;padding:12px;font-size:.88rem;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:12px">🔎 Hakiki Risiti (kwa namba au barcode)</button>
     <div class="stl">Rekodi Zote za Malipo</div>
     <div class="card"><div class="cbd">
     ${MAL.length?MAL.map(p=>`
@@ -1074,6 +1102,7 @@ function renderMalipo(){
           <div class="pamt">TZS ${tzs(p.kilipo)}</div>
           <div class="pnjia">${p.njia||'—'}</div>
           <div style="font-size:.64rem;color:var(--faint);margin-top:3px">Hadi: ${fmt(p.mpya)}</div>
+          ${p.risiti?`<button class="hkbtn" onclick="openHakiki('${hkEsc(p.risiti)}')">🔎 Hakiki</button>`:''}
         </div>
       </div>`).join(''):'<div class="empty"><span>💰</span>Hakuna malipo bado</div>'}
     </div></div>`;
@@ -1547,6 +1576,108 @@ function closeRemind() {
   document.getElementById('remind-popup').classList.remove('on');
 }
 
+// ═══ HAKIKI RISITI (uthibitisho wa malipo) — kwa mpangaji na kwa mtu yeyote mwenye barcode ═══
+let _hkStream = null, _hkRAF = 0, _hkJsqrP = null;
+const hkEsc = s => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function hkParse(raw){
+  raw = (raw||'').trim(); if(!raw) return null;
+  if(/^https?:\/\//i.test(raw)){
+    try{ const u = new URL(raw); raw = (u.searchParams.get('hakiki') || u.searchParams.get('h') || '').trim(); }catch(e){ return null; }
+  }
+  const no = raw.toUpperCase(), m = no.match(/^RCP-(\d{1,6})-(\d{1,6})$/);
+  return m ? {no, tid: 'TEN-' + m[1].padStart(3,'0')} : null;
+}
+function hkCard(ok, html){
+  return `<div style="border:2px solid ${ok?'#059669':'#DC2626'};border-radius:16px;padding:14px 16px;background:${ok?'#ECFDF5':'#FEF2F2'}">
+    <div style="font-weight:900;font-size:1rem;color:${ok?'#047857':'#B91C1C'};margin-bottom:8px">${ok?'✅ RISITI HALALI':'❌ HAIJATHIBITIKA'}</div>
+    <div style="font-size:.82rem;line-height:1.7">${html}</div></div>`;
+}
+function openHakiki(prefill){
+  scr('scr-hakiki');
+  document.getElementById('hk-res').innerHTML = '';
+  document.getElementById('hk-no').value = prefill || '';
+  if(prefill) hkGo();
+}
+function closeHakiki(){
+  hkStop();
+  try{ history.replaceState(null,'',location.pathname); }catch(e){}
+  scr(T ? 'scr-app' : 'scr-login');
+}
+async function hkGo(){
+  const out = document.getElementById('hk-res'), q = hkParse(document.getElementById('hk-no').value);
+  if(!q){ out.innerHTML = hkCard(false, 'Andika namba ya risiti kama <strong>RCP-001-001</strong>, au scan barcode ya risiti.'); return; }
+  out.innerHTML = '<div style="text-align:center;color:#64748B;font-size:.82rem">⏳ Inahakiki...</div>';
+  try{
+    await ensureAnonAuth();
+    // njia ileile ambayo mpangaji anaitumia kuona malipo yake (hakuna ruhusa mpya zinazohitajika)
+    const ms = await db.collection('wapangaji').doc(q.tid).collection('malipo').orderBy('tarehe','desc').get();
+    const hits = ms.docs.map(d=>d.data()).filter(x=>String(x.risiti||'').toUpperCase()===q.no);
+    if(!hits.length){
+      out.innerHTML = hkCard(false, `Risiti <strong>${hkEsc(q.no)}</strong> haipatikani kwenye rekodi za KISEJA. Inaweza kuwa si ya kweli, imeandikwa vibaya, au bado haijasawazishwa. Wasiliana: <strong>+255 736 631 613</strong>`);
+      return;
+    }
+    const uniq = [...new Map(hits.map(x=>[x.tarehe+'|'+x.kilipo+'|'+x.mpya, x])).values()];
+    const p = uniq[0]; let ny = '';
+    try{ const td = await db.collection('wapangaji').doc(q.tid).get(); ny = (td.exists && td.data().nyumba) || ''; }catch(e){}
+    const row = (l,v) => `<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:#64748B">${l}</span><strong style="text-align:right">${v}</strong></div>`;
+    const warn = uniq.length>1 ? '<div style="background:#FFF7ED;border-radius:8px;padding:6px 10px;margin-bottom:8px;color:#9A3412">⚠️ Kuna rekodi zaidi ya moja zenye namba hii zinazotofautiana. Wasiliana na KISEJA ili kuthibitisha.</div>' : '';
+    out.innerHTML = hkCard(true, warn
+      + row('Namba ya Risiti', hkEsc(p.risiti))
+      + row('Tarehe ya Malipo', fmt(p.tarehe))
+      + row('Kiasi Kilicholipwa', 'TZS ' + tzs(p.kilipo))
+      + row('Kipindi', p.kuanza ? fmt(p.kuanza)+' → '+fmt(p.mpya) : hkEsc(p.kipindi||'—'))
+      + (ny ? row('Nyumba', hkEsc(ny)) : '')
+      + row('Kodi Imelipwa Hadi', fmt(p.mpya))
+      + row('Hali', hkEsc(p.hali||'—'))
+      + (T && T.id===q.tid ? '<div style="margin-top:8px;color:#047857;font-weight:800">✔ Hii ni risiti yako.</div>' : '')
+      + '<div style="margin-top:8px;font-size:.7rem;color:#64748B">Jina na namba ya simu ya mpangaji hazionyeshwi hapa.</div>');
+  }catch(e){
+    console.error('hakiki', e);
+    out.innerHTML = hkCard(false, 'Imeshindwa kuhakiki sasa hivi (angalia mtandao). Jaribu tena baadaye au wasiliana na KISEJA: <strong>+255 736 631 613</strong>');
+  }
+}
+function hkLoadJsQR(){
+  if(typeof jsQR !== 'undefined') return Promise.resolve();
+  if(_hkJsqrP) return _hkJsqrP;
+  const urls = ['https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js','https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js'];
+  _hkJsqrP = urls.reduce((p,u)=>p.catch(()=>new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=u; s.onload=res; s.onerror=rej; document.head.appendChild(s); })), Promise.reject());
+  _hkJsqrP.catch(()=>{ _hkJsqrP = null; });
+  return _hkJsqrP;
+}
+async function hkScan(){
+  const box = document.getElementById('hk-cam'), v = document.getElementById('hk-video'), msg = document.getElementById('hk-msg');
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ toast('Kamera haipatikani kwenye kivinjari hiki — andika namba ya risiti.'); return; }
+  try{ _hkStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}, audio:false}); }
+  catch(e){ toast('Ruhusa ya kamera imekataliwa au kamera haipatikani.'); return; }
+  v.srcObject = _hkStream; try{ await v.play(); }catch(e){}
+  box.style.display = 'block'; msg.textContent = 'Elekeza kamera kwenye barcode (QR) ya risiti...';
+  let det = null; if('BarcodeDetector' in window){ try{ det = new BarcodeDetector({formats:['qr_code']}); }catch(e){} }
+  if(!det){ try{ await hkLoadJsQR(); }catch(e){ msg.textContent = 'Imeshindwa kupakia kisomaji cha QR (angalia mtandao). Andika namba ya risiti badala yake.'; return; } }
+  const cv = document.getElementById('hk-canvas'), cx = cv.getContext('2d', {willReadFrequently:true});
+  const tick = async ()=>{
+    if(!_hkStream) return;
+    if(v.readyState >= 2 && v.videoWidth){
+      let val = null;
+      try{
+        if(det){ const r = await det.detect(v); if(r && r[0]) val = r[0].rawValue; }
+        else{ cv.width = v.videoWidth; cv.height = v.videoHeight; cx.drawImage(v,0,0); const im = cx.getImageData(0,0,cv.width,cv.height); const c = jsQR(im.data, im.width, im.height); if(c) val = c.data; }
+      }catch(e){}
+      if(val){
+        const q = hkParse(val);
+        if(q){ hkStop(); document.getElementById('hk-no').value = q.no; hkGo(); return; }
+        msg.textContent = 'Barcode hii si ya risiti ya KISEJA. Jaribu nyingine...';
+      }
+    }
+    _hkRAF = requestAnimationFrame(tick);
+  };
+  tick();
+}
+function hkStop(){
+  if(_hkStream){ _hkStream.getTracks().forEach(t=>t.stop()); _hkStream = null; }
+  cancelAnimationFrame(_hkRAF);
+  const box = document.getElementById('hk-cam'); if(box) box.style.display = 'none';
+}
+
 // ═══ SESSION RESTORE ═══
 window.addEventListener('load',async ()=>{
   // Sajili Service Worker (kuwezesha "Ongeza kwenye Skrini ya Nyumbani")
@@ -1561,9 +1692,11 @@ window.addEventListener('load',async ()=>{
 
   const st=sessionStorage.getItem('kt');
   const sm=sessionStorage.getItem('km');
+  const _hkQ=(new URLSearchParams(location.search).get('hakiki')||new URLSearchParams(location.search).get('h')||'').trim();
   if(st){
-    try{T=JSON.parse(st);MAL=sm?JSON.parse(sm):[];startApp();return;}catch(e){}
+    try{T=JSON.parse(st);MAL=sm?JSON.parse(sm):[];startApp();if(_hkQ)openHakiki(_hkQ);return;}catch(e){}
   }
+  if(_hkQ){ openHakiki(_hkQ); return; }
   scr('scr-login');
 });
 </script>
